@@ -19,9 +19,8 @@ typedef struct {
 	uint32_t DualAddressMode;	/* Dual addressing enable in I2C_OAR2 reg: D_I2C_ENDUALADDR_EN/DISABLE */
 	uint32_t OwnAddress2;		/* Secondary Address for Dual Address mode */
 	uint32_t Speed;				/* Peripherial clock freq [MHz] min value is 2(2MHz) max is 50(50MHz) or APB clock speed.  */
-	uint32_t NoStretchMode;		/* Clock stretching enable */
-	uint32_t GeneralCallMode;	/* General call enable */
-	uint32_t DmaEnable;			// DmaEnable
+	uint32_t NoStretchMode;		/* Clock stretching enable : D_I2C_NOSTRETCH_EN/DIS*/
+	uint32_t GeneralCallMode;	/* General call enable : D_I2C_GENCALL_EN/DIS*/
 }D_I2C_InitTypeDef;
 
 /* Macros  */
@@ -190,8 +189,8 @@ typedef struct {
 #define D_I2C_CTRL_GENCALL_NOCALL		0U
 
 #define D_I2C_CTRL_DUALF_Pos			7U /* Dual flag - Slave mode */
-#define D_I2C_CTRL_DUALF_OAR2MATCH		(1U << D_I2C_CTRL_DUALF_Pos) /* Address matcher with OAR2 */
 #define D_I2C_CTRL_DUALF_OAR1MATCH		0U /* Address matcher with OAR1 */
+#define D_I2C_CTRL_DUALF_OAR2MATCH		(1U << D_I2C_CTRL_DUALF_Pos) /* Address matcher with OAR2 */
 
 #define D_I2C_PEC_Pos					8U /* Packet error checking register */
 

@@ -18,7 +18,8 @@ typedef struct {
 	uint32_t OwnAddress1;		/* For Single Address mode and for Dual Address mode */
 	uint32_t DualAddressMode;	/* Dual addressing enable in I2C_OAR2 reg: D_I2C_ENDUALADDR_EN/DISABLE */
 	uint32_t OwnAddress2;		/* Secondary Address for Dual Address mode */
-	uint32_t Speed;				/* Peripherial clock freq [MHz] min value is 2(2MHz) max is 50(50MHz) or APB clock speed.  */
+	uint32_t ClockSpeed;				/* I2C clock speed up to 400kHz  */
+	uint32_t DutyCycle;				/* Duty cycle in Fast mode: D_I2C_CCR_DUTY_16p9 or D_I2C_CCR_DUTY_2*/
 	uint32_t NoStretchMode;		/* Clock stretching enable : D_I2C_NOSTRETCH_EN/DIS*/
 	uint32_t GeneralCallMode;	/* General call enable : D_I2C_GENCALL_EN/DIS*/
 }D_I2C_InitTypeDef;
@@ -28,6 +29,7 @@ typedef struct {
 #define D_I2C_ENABLED					1U
 
 /* InitTypeDef value definitions */
+
 /*Address mode*/
 #define D_I2C_ADDMODE_Pos				15U
 #define D_I2C_ADDMODE_7BIT				0x0000
@@ -41,8 +43,8 @@ typedef struct {
 #define D_I2C_SW_RST_EN					(1U << D_I2C_SW_RST_Pos)
 #define D_I2C_SW_RST_DIS				0U
 
-#define D_I2C_PEC_Pos					12U  /* Indicates whether the current or next byte in the shift reggister is a Packet Error Checking */
-#define D_I2C_PEC_TRANS					(1U << D_I2C_PEC_Pos)
+#define D_I2C_PEC_TRANS_Pos					12U  /* Indicates whether the current or next byte in the shift reggister is a Packet Error Checking */
+#define D_I2C_PEC_TRANS					(1U << D_I2C_PEC_TRANS_Pos)
 #define D_I2C_NO_PEC_TRANS				0U
 
 /* POS??? */
@@ -159,7 +161,7 @@ typedef struct {
 
 #define D_I2C_CTRL_PECERR_Pos			12U /* PEC error in reception */
 #define D_I2C_CTRL_PECERR_ACK			0U
-#define D_I2C_CTRL_PECERR_ACK			(1U << D_I2C_CTRL_PECERR_Pos)
+#define D_I2C_CTRL_PECERR_NACK			(1U << D_I2C_CTRL_PECERR_Pos)
 
 #define D_I2C_CTRL_TIMEOUT_Pos			14U /* Timeout error */
 #define D_I2C_CTRL_TIMEOUT_TOUT			(1U << D_I2C_CTRL_TIMEOUT_Pos) /* SCL low for 25ms */
@@ -199,8 +201,26 @@ typedef struct {
 #define D_I2C_OAR1_10B_Pos				0U
 #define D_I2C_OAR2_7B_Pos				1U
 
+/* I2C_CCR */
+#define D_I2C_CCR_MODE_Pos				15U
+#define D_I2C_CCR_MODE_F				(1U << D_I2C_CCR_MODE_Pos)
+#define D_I2C_CCR_MODE_S				0U
+
+#define D_I2C_CCR_DUTY_Pos				14	/* FM mode t_low/t_high */
+#define D_I2C_CCR_DUTY_16p9				(1U <<  D_I2C_CCR_DUTY_Pos) /* 16/9 */
+#define D_I2C_CCR_DUTY_2				0U	/* 2 */
+
+#define D_I2C_IS_SM(_speed_)			((_speed_) <= 100000)
+
+#define D_I2C_CCR_FREQ_Pos				0
+#define D_I2C_CCR_FREQ_MASK				0x0FFF  /* 12 bits information */
+
+/* value checking */
+#define D_I2C_IS_VALID_FREQ(_freq_)				((_freq_ < 50000000) && (_freq_ > 2000000)) /* between 2 and 50 MHz */
+
+
 /* Function prototypes */
-void D_i2c_init(I2C_TypeDef* I2C_Periph, I2C_InitTypeDef* InitStruct);
+void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct);
 
 #endif /* I2C_DRIVER_D_I2C_H_ */
 

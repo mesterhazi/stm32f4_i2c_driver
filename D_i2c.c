@@ -130,3 +130,63 @@ void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct){
 
 
 }
+
+void D_i2c_start(I2C_TypeDef* I2C_Periph){
+	I2C_Periph->CR1 |= D_I2C_START_START;
+	while(!(I2C_Periph->SR1 & D_I2C_CTRL_START_GENERATED)){}
+}
+
+void D_i2c_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t *data){
+	volatile uint32_t temp; /* to read the register values to clear them */
+	uint64_t i=0, len = 0;
+
+	len = sizeof(data)/sizeof(data[0]);
+
+	/* I2C START */
+	D_i2c_start(I2C_Periph);
+	/* Send Address */
+	if(address & 0x0780){  /* Address values from bits 8-10 are non zero - 10 bit mode*/
+		I2C_Periph->DR |= ((address >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD;  /* header is 11110xx0 where xx is top 2 bits of addr */
+		while(I2C_Periph->SR1 & D_I2C_CTRL_ADD10_SENT){} /* header sent */
+		I2C_Periph->DR |= address & 0xFF;
+	} else {
+		I2C_Periph->DR |= address & 0x7F;	// 7 bit address
+	}
+	while(I2C_Periph->SR1 & D_I2C_CTRL_ADDR_ACK){}	/* full address sent */
+	temp = I2C_Periph->SR2;  /* read SR2 to clear it */
+
+	for(i=0; i<len; i++){
+		while(I2C_Periph->SR1 & D_I2C_CTRL_TxE_EMPTY){}  /* Wait for empty shift register */
+		I2C_Periph->DR |= data[i];
+		while(I2C_Periph->SR1 & D_I2C_CTRL_BYTE_FINISHED){}
+	}
+	/* I2C STOP */
+	I2C_Periph->CR1 |= D_I2C_STOP_STOP;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

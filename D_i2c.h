@@ -27,6 +27,7 @@ typedef struct {
 /* Macros  */
 #define D_I2C_DISABLED					0U
 #define D_I2C_ENABLED					1U
+#define D_I2C_ADDR_10BIT_HEAD			0x11110000  /*0x11110xx0*/
 
 /* InitTypeDef value definitions */
 
@@ -221,6 +222,8 @@ typedef struct {
 
 /* Function prototypes */
 void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct);
+void D_i2c_start(I2C_TypeDef* I2C_Periph);
+void D_i2c_sendbyte(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t data);
 
 #endif /* I2C_DRIVER_D_I2C_H_ */
 

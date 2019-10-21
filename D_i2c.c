@@ -136,24 +136,41 @@ void D_i2c_start(I2C_TypeDef* I2C_Periph){
 	while(!(I2C_Periph->SR1 & D_I2C_CTRL_START_GENERATED)){}
 }
 
-void D_i2c_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t *data){
+
+/* Send address on the selected I2C peripherial
+ * This function sends a START signal then the address.
+ * 7 bit and 10 bit addresses are supported
+ * @param I2C_Periph:  I2C peripherial pointer
+ * @param address:  I2C address if bits 8-10 are 0 7 bit address is expected
+ * @param read_notwrite:  1:read request, 0:write request	*/
+void D_i2c_sendaddr(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t read_notwrite, uint8_t is10bitaddr = 0x00) {
+	uint32_t temp;
+	read_notwrite &= 0x01;  /* only 0x00 and 0x01 are expected */
+	/* I2C START */
+	D_i2c_start(I2C_Periph);
+	/* Send Address */
+	if (is10bitaddr & 0x01) {
+		 /* header is 11110xx0 where xx is top 2 bits of addr */
+		I2C_Periph->DR |= ((address >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD  | read_notwrite;
+		while (I2C_Periph->SR1 & D_I2C_CTRL_ADD10_SENT) {
+		} /* header sent */
+		I2C_Periph->DR |= address & 0xFF;
+	} else {
+		I2C_Periph->DR |= ((address & 0x7F) << 1) | read_notwrite;	// 7 bit address + read_notwrite as LSB
+	}
+	while (I2C_Periph->SR1 & D_I2C_CTRL_ADDR_ACK) {
+	} /* full address sent */
+	temp = I2C_Periph->SR2; /* read SR2 to clear it */
+
+}
+
+void D_i2c_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t *data, uint8_t is10bitaddr = 0x00){
 	volatile uint32_t temp; /* to read the register values to clear them */
 	uint64_t i=0, len = 0;
 
 	len = sizeof(data)/sizeof(data[0]);
 
-	/* I2C START */
-	D_i2c_start(I2C_Periph);
-	/* Send Address */
-	if(address & 0x0780){  /* Address values from bits 8-10 are non zero - 10 bit mode*/
-		I2C_Periph->DR |= ((address >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD;  /* header is 11110xx0 where xx is top 2 bits of addr */
-		while(I2C_Periph->SR1 & D_I2C_CTRL_ADD10_SENT){} /* header sent */
-		I2C_Periph->DR |= address & 0xFF;
-	} else {
-		I2C_Periph->DR |= address & 0x7F;	// 7 bit address
-	}
-	while(I2C_Periph->SR1 & D_I2C_CTRL_ADDR_ACK){}	/* full address sent */
-	temp = I2C_Periph->SR2;  /* read SR2 to clear it */
+	D_i2c_sendaddr(I2C_Periph, address, 0x01, is10bitaddr);
 
 	for(i=0; i<len; i++){
 		while(I2C_Periph->SR1 & D_I2C_CTRL_TxE_EMPTY){}  /* Wait for empty shift register */
@@ -162,6 +179,26 @@ void D_i2c_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t *data){
 	}
 	/* I2C STOP */
 	I2C_Periph->CR1 |= D_I2C_STOP_STOP;
+}
+
+/* I2C master read
+ * Starts an I2C transmission with writing an address
+ * then receiving the answer from the slave device */
+/* TODO read into buffer given as parameter */
+uint8_t* D_i2c_readbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t is10bitaddr = 0x00){
+
+	D_i2c_sendaddr(I2C_Periph, address, 0x01, is10bitaddr);
+	if(is10bitaddr & 0x01){
+		/* Start repeat */
+		D_i2c_start(I2C_Periph);
+		/* after 10 bit addr sent the header shall be sent with LSB=1 */
+		I2C_Periph->DR |= ((address >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD  | 0x01;
+		/* TODO disable ACK if only one byte is expected */
+		while (I2C_Periph->SR1 & D_I2C_CTRL_ADD10_SENT) {
+		} /* header sent */
+
+	}
+
 }
 
 

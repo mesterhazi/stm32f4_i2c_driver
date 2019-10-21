@@ -223,7 +223,9 @@ typedef struct {
 /* Function prototypes */
 void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct);
 void D_i2c_start(I2C_TypeDef* I2C_Periph);
-void D_i2c_sendbyte(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t data);
+void D_i2c_sendaddr(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t is10bitaddr = 0x00);
+void D_i2c_sendbyte(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t data, uint8_t is10bitaddr = 0x00);
+uint8_t* D_i2c_readbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t is10bitaddr = 0x00);
 
 #endif /* I2C_DRIVER_D_I2C_H_ */
 

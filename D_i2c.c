@@ -175,8 +175,9 @@ void D_i2c_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t *data, u
 	for(i=0; i<len; i++){
 		while(I2C_Periph->SR1 & D_I2C_CTRL_TxE_EMPTY){}  /* Wait for empty shift register */
 		I2C_Periph->DR |= data[i];
-		while(I2C_Periph->SR1 & D_I2C_CTRL_BYTE_FINISHED){}
 	}
+	/* wait for byte transfer finished */
+	while(I2C_Periph->SR1 & D_I2C_CTRL_BYTE_FINISHED){}
 	/* I2C STOP */
 	I2C_Periph->CR1 |= D_I2C_STOP_STOP;
 }
@@ -185,7 +186,7 @@ void D_i2c_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t *data, u
  * Starts an I2C transmission with writing an address
  * then receiving the answer from the slave device */
 /* TODO read into buffer given as parameter */
-uint8_t* D_i2c_readbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint8_t is10bitaddr = 0x00){
+uint8_t* D_i2c_readbytes(I2C_TypeDef *I2C_Periph, uint16_t address, uint16_t size, uint8_t is10bitaddr = 0x00){
 
 	D_i2c_sendaddr(I2C_Periph, address, 0x01, is10bitaddr);
 	if(is10bitaddr & 0x01){

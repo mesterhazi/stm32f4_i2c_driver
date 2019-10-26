@@ -11,8 +11,11 @@ uint16_t AHBP_Prescaler[8] = {2,4,8,16,64,128,256,512};
 uint8_t APB1_Prescaler[4] = {2,4,8,16};
 uint8_t PLL_P_values[4] = {2,4,6,8};
 
-void D_i2c_start(I2C_TypeDef* I2C_Periph);
-void D_i2c_sendaddr(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t pAead_notwrite, uint8_t pIs10bitaddr);
+static void D_i2c_start(I2C_TypeDef* I2C_Periph);
+static void D_i2c_stop(I2C_TypeDef* I2C_Periph);
+static void D_i2c_ack_disable(I2C_TypeDef *I2C_Periph);
+static void D_i2c_clear_ADDR(I2C_TypeDef *I2C_Periph);
+static void D_i2c_sendaddr(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t pRead_notwrite, uint8_t pIs10bitaddr);
 
 uint32_t GetPllClock() {
 	uint8_t  pllm, pllp;
@@ -134,11 +137,24 @@ void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct){
 
 }
 
-void D_i2c_start(I2C_TypeDef* I2C_Periph){
+static void D_i2c_start(I2C_TypeDef *I2C_Periph){
 	I2C_Periph->CR1 |= D_I2C_START_START;
 	while(!(I2C_Periph->SR1 & D_I2C_FLAG_START_GENERATED)){}
 }
 
+static void D_i2c_stop(I2C_TypeDef *I2C_Periph){
+	I2C_Periph->CR1 |= D_I2C_STOP_STOP;
+}
+
+static void D_i2c_ack_disable(I2C_TypeDef *I2C_Periph){
+	I2C_Periph->CR1 &= ~(D_I2C_ACK_ACK);
+}
+static void D_i2c_clear_ADDR(I2C_TypeDef *I2C_Periph){
+	uint32_t temp;
+	temp = I2C_Periph->SR1;
+	temp = I2C_Periph->SR1;
+	(void)temp;
+}
 
 /* Send address on the selected I2C peripherial
  * This function sends a START signal then the address.
@@ -146,34 +162,32 @@ void D_i2c_start(I2C_TypeDef* I2C_Periph){
  * @param I2C_Periph:  I2C peripherial pointer
  * @param address:  I2C address if bits 8-10 are 0 7 bit address is expected
  * @param read_notwrite:  1:read request, 0:write request	*/
-void D_i2c_sendaddr(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t pAead_notwrite, uint8_t pIs10bitaddr) {
-	uint32_t temp;
-	pAead_notwrite &= 0x01;  /* only 0x00 and 0x01 are expected */
+static void D_i2c_sendaddr(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t pRead_notwrite, uint8_t pIs10bitaddr) {
+	pRead_notwrite &= 0x01;  /* only 0x00 and 0x01 are expected */
 	/* I2C START */
 	D_i2c_start(I2C_Periph);
 	/* Send Address */
 	if (pIs10bitaddr & 0x01) {
 		 /* header is 11110xx0 where xx is top 2 bits of addr */
-		I2C_Periph->DR |= ((pAddress >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD  | pAead_notwrite;
+		I2C_Periph->DR |= ((pAddress >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD  | pRead_notwrite;
 		while (I2C_Periph->SR1 & D_I2C_FLAG_ADD10_SENT) {
 		} /* header sent */
 		I2C_Periph->DR |= pAddress & 0xFF;
 	} else {
-		I2C_Periph->DR |= ((pAddress & 0x7F) << 1) | pAead_notwrite;	// 7 bit address + read_notwrite as LSB
+		I2C_Periph->DR |= ((pAddress & 0x7F) << 1) | pRead_notwrite;	// 7 bit address + read_notwrite as LSB
 	}
 	while (I2C_Periph->SR1 & D_I2C_FLAG_ADDR_ACK) {
 	} /* full address sent */
-	temp = I2C_Periph->SR2; /* read SR2 to clear it */
 
 }
 
 void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pTxData, uint8_t pIs10bitaddr){
-	volatile uint32_t temp; /* to read the register values to clear them */
 	uint64_t i=0, len = 0;
 
 	len = sizeof(pTxData)/sizeof(pTxData[0]);
 
 	D_i2c_sendaddr(I2C_Periph, pAddress, 0x01, pIs10bitaddr);
+	D_i2c_clear_ADDR(I2C_Periph);
 
 	for(i=0; i<len; i++){
 		while(I2C_Periph->SR1 & D_I2C_FLAG_TxE_EMPTY){}  /* Wait for empty shift register */
@@ -188,20 +202,76 @@ void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t 
 /* I2C master read
  * Starts an I2C transmission with writing an address
  * then receiving the answer from the slave device */
-/* TODO read into buffer given as parameter */
 void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
 
-	D_i2c_sendaddr(I2C_Periph, pAddress, 0x01, pIs10bitaddr);
 	if(pIs10bitaddr & 0x01){
+		D_i2c_sendaddr(I2C_Periph, pAddress, 0x00, pIs10bitaddr);
+		D_i2c_clear_ADDR(I2C_Periph);
 		/* Start repeat */
 		D_i2c_start(I2C_Periph);
 		/* after 10 bit addr sent the header shall be sent with LSB=1 */
 		I2C_Periph->DR |= ((pAddress >> 7) & 0x6) | D_I2C_ADDR_10BIT_HEAD  | 0x01;
-		/* TODO disable ACK if only one byte is expected */
-		while (I2C_Periph->SR1 & D_I2C_FLAG_ADD10_SENT) {
-		} /* header sent */
+		/* disable ACK if only one byte is expected */
+		if(pSize == 1){
+			I2C_Periph->CR1 &= ~(D_I2C_ACK_ACK);
+		}
+		while (I2C_Periph->SR1 & D_I2C_FLAG_ADD10_SENT) {} /* header sent */
+	} else{
+		D_i2c_sendaddr(I2C_Periph, pAddress, 0x01, pIs10bitaddr);
+		if(pSize == 1){  /* 1 byte read */
+			D_i2c_ack_disable(I2C_Periph); /* Must disable ACK before clearing SR1 */
+			while(!(I2C_Periph->SR1 & D_I2C_FLAG_ADDR_ACK)){}
+			D_i2c_clear_ADDR(I2C_Periph);
+			while(!(I2C_Periph->SR1 & D_I2C_FLAG_RxNE_NEMPTY)){}
+			*pRxBuf = I2C_Periph->DR;
+			D_i2c_stop(I2C_Periph);
+			}
+		else if(pSize == 2){
+			D_i2c_ack_disable(I2C_Periph);
+			/* POS=1 before data reception starts */
+			I2C_Periph->CR1 |= (1U << D_I2C_POS_Pos);
+			D_i2c_clear_ADDR(I2C_Periph);
+			while(!(I2C_Periph->SR1 & D_I2C_FLAG_BYTE_FINISHED)){}
+			/* Data1 in DR regm Data2 in shift reg */
+			D_i2c_stop(I2C_Periph);
+			*pRxBuf = I2C_Periph->DR;
+			pRxBuf ++;
+			*pRxBuf = I2C_Periph->DR;
+		}
+		else{
+			D_i2c_clear_ADDR(I2C_Periph);
+			while(pSize > 3){
+				*pRxBuf = I2C_Periph->DR;
+				pRxBuf ++;
+				while(I2C_Periph->SR1 & D_I2C_FLAG_RxNE_NEMPTY){}
+				pSize --;
+			}
+			while(!(I2C_Periph->SR1 & D_I2C_FLAG_BYTE_FINISHED)){}
+			/* data N-2 is DR, N-1 in shift reg */
+			D_i2c_ack_disable(I2C_Periph);
+			*pRxBuf = I2C_Periph->DR;
+			pRxBuf ++;
+			while(!(I2C_Periph->SR1 & D_I2C_FLAG_BYTE_FINISHED)){}
+			/* data N-1 is DR, N in shift reg */
+			D_i2c_stop(I2C_Periph);
+			*pRxBuf = I2C_Periph->DR;
+			pRxBuf++;
+			*pRxBuf = I2C_Periph->DR;
+
+		}
+
+
 
 	}
+}
+
+
+void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
+
+}
+
+
+void D_i2c_Master_writeregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pTxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
 
 }
 

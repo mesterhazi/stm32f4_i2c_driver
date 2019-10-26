@@ -44,11 +44,13 @@ typedef struct {
 #define D_I2C_SW_RST_EN					(1U << D_I2C_SW_RST_Pos)
 #define D_I2C_SW_RST_DIS				0U
 
-#define D_I2C_PEC_TRANS_Pos					12U  /* Indicates whether the current or next byte in the shift reggister is a Packet Error Checking */
+#define D_I2C_PEC_TRANS_Pos				12U  /* Indicates whether the current or next byte in the shift reggister is a Packet Error Checking */
 #define D_I2C_PEC_TRANS					(1U << D_I2C_PEC_TRANS_Pos)
 #define D_I2C_NO_PEC_TRANS				0U
 
-/* POS??? */
+#define D_I2C_POS_Pos					11U
+#define D_I2C_POS_NEXT					(1U << D_I2C_POS_Pos)
+#define D_I2C_POS_CURRENT				0U
 
 #define D_I2C_ACK_Pos					10U
 #define D_I2C_ACK_ACK					(1U << D_I2C_ACK_Pos)
@@ -224,6 +226,8 @@ typedef struct {
 void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct);
 void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pTxData, uint8_t pIs10bitaddr);
 void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr);
+void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr);
+void D_i2c_Master_writeregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pTxBuf, uint16_t pSize, uint8_t pIs10bitaddr);
 
 #endif /* I2C_DRIVER_D_I2C_H_ */
 

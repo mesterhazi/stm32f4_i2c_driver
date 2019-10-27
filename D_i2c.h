@@ -27,6 +27,12 @@ typedef struct {
 /* Macros  */
 #define D_I2C_DISABLED					0U
 #define D_I2C_ENABLED					1U
+
+/* Clock control */
+#define D_I2C_CLOCK_EN_I2C1				(1U << 21)
+#define D_I2C_CLOCK_EN_I2C2				(1U << 22)
+#define D_I2C_CLOCK_EN_I2C3				(1U << 23)
+
 #define D_I2C_ADDR_10BIT_HEAD			0x11110000  /*0x11110xx0*/
 
 /* InitTypeDef value definitions */
@@ -223,6 +229,7 @@ typedef struct {
 
 
 /* Function prototypes */
+void D_i2c_ClockEn(I2C_TypeDef* I2C_Periph, uint8_t Enabled);
 void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct);
 void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pTxData, uint8_t pIs10bitaddr);
 void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr);

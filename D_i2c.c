@@ -71,7 +71,31 @@ uint32_t Get_PCLK1(){
 	return pclk1;
 
 }
-
+/* D_i2c_ClockEn
+ * Enables or disables I2C peripherial clock
+ * @param I2C_Periph: I2C peripherial pointer line I2C1
+ * @param Enabled: D_I2C_DISABLED or D_I2C_ENABLED */
+void D_i2c_ClockEn(I2C_TypeDef* I2C_Periph, uint8_t Enabled) {
+	if (I2C_Periph == I2C1) {
+		if (Enabled & 0x01) {
+			RCC->APB1ENR |= D_I2C_CLOCK_EN_I2C1;
+		} else {
+			RCC->APB1ENR &= ~D_I2C_CLOCK_EN_I2C1;
+		}
+	} else if (I2C_Periph == I2C2) {
+		if (Enabled & 0x01) {
+			RCC->APB1ENR |= D_I2C_CLOCK_EN_I2C2;
+		} else {
+			RCC->APB1ENR &= ~D_I2C_CLOCK_EN_I2C2;
+		}
+	} else if (I2C_Periph == I2C3) {
+		if (Enabled & 0x01) {
+			RCC->APB1ENR |= D_I2C_CLOCK_EN_I2C3;
+		} else {
+			RCC->APB1ENR &= ~D_I2C_CLOCK_EN_I2C3;
+		}
+	}
+}
 
 void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct){
 	uint32_t pclk, ccr_val;
@@ -261,11 +285,6 @@ void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t 
 	}
 }
 
-
-void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
-
-}
-
 /* D_i2c_Master_writeregister
  * Writes a register identified by an offset (MAP)
  * I2C write to the given address, first data byte is the register selector (reg_addr), rest is the register value
@@ -289,9 +308,19 @@ void D_i2c_Master_writeregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint
 }
 
 /* D_i2c_Master_readregister
- * Reads a register identified by an offset */
+ * Reads a register identified by an offset (MAP)
+ * Uses the read as defined for CS43L22 chip:
+ * 1. I2c write address + MAP
+ * 2. STOP
+ * 3. I2c read
+ * @param pAddress: I2C address
+ * @param reg_addr: register offset (MAP)
+ * @param pTxBuf: register value array
+ * @param pSize: size of the pTxBuf
+ * @param pIs10bitaddr: flag 0:7bit, 1:10bit I2C address */
 void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
-
+	D_i2c_Master_sendbytes(I2C_Periph, pAddress, &reg_addr, pIs10bitaddr);
+	D_i2c_Master_readbytes(I2C_Periph, pAddress, pRxBuf, pSize, pIs10bitaddr);
 }
 
 

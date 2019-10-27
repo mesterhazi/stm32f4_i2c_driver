@@ -257,11 +257,7 @@ void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t 
 			*pRxBuf = I2C_Periph->DR;
 			pRxBuf++;
 			*pRxBuf = I2C_Periph->DR;
-
 		}
-
-
-
 	}
 }
 
@@ -270,8 +266,31 @@ void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8
 
 }
 
-
+/* D_i2c_Master_writeregister
+ * Writes a register identified by an offset (MAP)
+ * I2C write to the given address, first data byte is the register selector (reg_addr), rest is the register value
+ * @param pAddress: I2C address
+ * @param reg_addr: register offset (MAP)
+ * @param pTxBuf: register value array
+ * @param pSize: size of the pTxBuf
+ * @param pIs10bitaddr: flag 0:7bit, 1:10bit I2C address */
 void D_i2c_Master_writeregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pTxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
+	uint8_t offset_plus_data[pSize+1];
+	uint8_t index = 0;
+	offset_plus_data[index] = reg_addr;
+	index ++;
+	while(pSize > 0){
+		offset_plus_data[index] = *pTxBuf;
+		index ++;
+		pTxBuf ++;
+		pSize --;
+	}
+	D_i2c_Master_sendbytes(I2C_Periph, pAddress, offset_plus_data, pIs10bitaddr);
+}
+
+/* D_i2c_Master_readregister
+ * Reads a register identified by an offset */
+void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr){
 
 }
 

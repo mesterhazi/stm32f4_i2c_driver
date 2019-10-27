@@ -168,6 +168,7 @@ static void D_i2c_start(I2C_TypeDef *I2C_Periph){
 
 static void D_i2c_stop(I2C_TypeDef *I2C_Periph){
 	I2C_Periph->CR1 |= D_I2C_STOP_STOP;
+	while(I2C_Periph->CR1 & D_I2C_STOP_STOP){} /* Wait for HW to clear this  MUST NOT WRITE CR1 BEFORE! */
 }
 
 static void D_i2c_ack_disable(I2C_TypeDef *I2C_Periph){
@@ -220,7 +221,7 @@ void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t 
 	/* wait for byte transfer finished */
 	while(I2C_Periph->SR1 & D_I2C_FLAG_BYTE_FINISHED){}
 	/* I2C STOP */
-	I2C_Periph->CR1 |= D_I2C_STOP_STOP;
+	D_i2c_stop(I2C_Periph);
 }
 
 /* I2C master read

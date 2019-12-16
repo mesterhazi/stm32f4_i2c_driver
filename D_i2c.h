@@ -28,6 +28,9 @@ typedef struct {
 #define D_I2C_DISABLED					0U
 #define D_I2C_ENABLED					1U
 
+#define D_I2C_MODE_SM					0U
+#define D_I2C_MODE_FM					1U
+
 /* Clock control */
 #define D_I2C_CLOCK_EN_I2C1				(1U << 21)
 #define D_I2C_CLOCK_EN_I2C2				(1U << 22)
@@ -149,8 +152,8 @@ typedef struct {
 #define D_I2C_FLAG_RxNE_NEMPTY			(1U << D_I2C_FLAG_RxNE_Pos)
 
 #define D_I2C_FLAG_TxE_Pos				7U /* Date register not empty - transmitter mode */
-#define D_I2C_FLAG_TxE_EMPTY			0U
-#define D_I2C_FLAG_TxE_NEMPTY			(1U << D_I2C_FLAG_TxE_Pos)
+#define D_I2C_FLAG_TxE_NEMPTY			0U
+#define D_I2C_FLAG_TxE_EMPTY			(1U << D_I2C_FLAG_TxE_Pos)
 
 #define D_I2C_FLAG_BERR_Pos				8U /* Bus error - misplaced START or STOP condition */
 #define D_I2C_FLAG_BERR_NOERR			0U
@@ -224,6 +227,8 @@ typedef struct {
 #define D_I2C_CCR_FREQ_Pos				0
 #define D_I2C_CCR_FREQ_MASK				0x0FFF  /* 12 bits information */
 
+#define D_I2C_TRISE_MASK				0x3F
+
 /* value checking */
 #define D_I2C_IS_VALID_FREQ(_freq_)				((_freq_ < 50000000) && (_freq_ > 2000000)) /* between 2 and 50 MHz */
 
@@ -231,10 +236,11 @@ typedef struct {
 /* Function prototypes */
 void D_i2c_ClockEn(I2C_TypeDef* I2C_Periph, uint8_t Enabled);
 void D_i2c_init(I2C_TypeDef* I2C_Periph, D_I2C_InitTypeDef* InitStruct);
-void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pTxData, uint8_t pIs10bitaddr);
-void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr);
-void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint16_t pSize, uint8_t pIs10bitaddr);
-void D_i2c_Master_writeregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pTxBuf, uint16_t pSize, uint8_t pIs10bitaddr);
+void D_i2c_reset_peripherial(I2C_TypeDef* I2C_Periph);
+void D_i2c_Master_sendbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pTxData, uint64_t pSize, uint8_t pIs10bitaddr);
+void D_i2c_Master_readbytes(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t *pRxBuf, uint64_t pSize, uint8_t pIs10bitaddr);
+void D_i2c_Master_readregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pRxBuf, uint64_t pSize, uint8_t pIs10bitaddr);
+void D_i2c_Master_writeregister(I2C_TypeDef *I2C_Periph, uint16_t pAddress, uint8_t reg_addr, uint8_t *pTxBuf, uint64_t pSize, uint8_t pIs10bitaddr);
 
 #endif /* I2C_DRIVER_D_I2C_H_ */
 
